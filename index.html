@@ -1,158 +1,150 @@
 <!doctype html>
-<html lang="ko">
+<html lang="ko" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>향록연극회 · Evergreen</title>
+<title>EVERGREEN · 향록연극회</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;800&family=Noto+Sans+KR:wght@400;700;900&family=Space+Mono&display=swap" rel="stylesheet">
-<style>
-:root{
-  --black:#0A0A0A;--ink:#F2F2F2;--mute:#8C8C8C;--green:#00E65C;
-  --line:rgba(242,242,242,.16);--ease:cubic-bezier(.7,0,.2,1);
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;800;900&family=JetBrains+Mono:wght@400;700&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+<script>
+  // restore the saved colour mode before first paint (falls back to dark)
+  try { var saved = localStorage.getItem('ev-theme'); if (saved === 'light' || saved === 'dark') document.documentElement.dataset.theme = saved; } catch (e) {}
+</script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+  }
 }
+</script>
+<style>
+/* Two colours only. Dark: black ground, green ink. Light: green ground, black ink. */
+:root{
+  --bg:#0A0A0A;
+  --fg:#00E65C;
+  --rule:color-mix(in srgb, var(--fg) 24%, transparent);
+  --pad:32px;
+  --nav-h:76px;
+  --mono:"JetBrains Mono","Noto Sans KR",monospace;
+  --ease:cubic-bezier(.7,0,.2,1);
+}
+:root[data-theme="light"]{
+  --bg:#00E65C;
+  --fg:#0A0A0A;
+}
+
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{min-height:100%}
-body{background:var(--black);color:var(--ink);font-family:"Noto Sans KR",system-ui,sans-serif;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--fg);font-family:"Noto Sans KR",system-ui,sans-serif;word-break:keep-all;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .4s,color .4s}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+a{color:inherit;text-decoration:none}
 [hidden]{display:none!important}
-.en{font-family:"Inter Tight",system-ui,sans-serif;letter-spacing:-.01em}
-.mono{font-family:"Space Mono",ui-monospace,monospace;letter-spacing:.02em}
-.label{font-family:"Inter Tight",sans-serif;font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+:focus-visible{outline:2px solid var(--fg);outline-offset:4px}
 
-/* header */
-.top{position:fixed;inset:0 0 auto 0;z-index:10;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:18px 32px;color:var(--ink);transition:color .4s}
-.top.on-green{color:var(--black)}
-.top.solid{background:rgba(10,10,10,.9);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);color:var(--ink)}
-.logo{justify-self:start;font-weight:900;font-size:16px;letter-spacing:-.02em;color:var(--green);opacity:0;transition:opacity .4s,color .4s}
-.top.show-logo .logo,.top.solid .logo{opacity:1}
-.top.on-green .logo{color:var(--black)}
-.nav{display:flex;font-size:13px;font-weight:700}
-.nav button{position:relative;padding:4px 0}
-.nav button+button::before{content:"/";margin:0 12px;opacity:.6;font-weight:400}
-.nav button:hover,.nav button[aria-current="page"]{color:var(--green)}
-.top.on-green .nav button:hover{color:var(--ink)}
+.mono{font-family:var(--mono);font-size:12px;letter-spacing:.02em;text-transform:uppercase}
+.display{font-family:"Inter Tight",system-ui,sans-serif;font-weight:900;letter-spacing:-.05em;line-height:.8;text-transform:uppercase}
 
-/* ---------- hero (pinned, 2 colour layers) ---------- */
-#home{position:relative;height:200vh}
-.pin{position:sticky;top:0;height:100vh;overflow:hidden}
-.layer{position:absolute;inset:0;padding:0 32px}
-.l-black{background:var(--black);color:var(--ink)}
-.l-black .title{color:var(--green)}
-.l-green{background:var(--green);color:var(--black);clip-path:inset(calc((1 - var(--p,0)) * 100%) 0 0 0)}
-.l-green .title{color:var(--black)}
+/* ---------- header ---------- */
+.top{position:fixed;inset:0 0 auto 0;z-index:30;height:var(--nav-h);display:flex;align-items:center;justify-content:space-between;gap:24px;padding:0 var(--pad);background:var(--bg);transition:background .4s}
+.logo{display:block;width:54px;height:32px;background:var(--fg);-webkit-mask:url(assets/logo.png) center/contain no-repeat;mask:url(assets/logo.png) center/contain no-repeat;transition:background .4s;flex:none}
+.nav{display:flex;align-items:center;gap:28px}
+.nav a{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;padding:4px 0}
+.nav a:hover,.nav a[aria-current="page"]{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:6px}
 
-.grid-lines{position:absolute;inset:0;pointer-events:none;padding:0 32px;display:grid;grid-template-columns:repeat(12,1fr);gap:24px}
-.grid-lines span{border-left:1px solid currentColor;opacity:.08}
+/* sun in dark mode, moon in light mode; 0.3s rotate + fade between them */
+.theme-btn{position:relative;width:44px;height:44px;display:grid;place-items:center;margin-right:-10px;flex:none}
+.theme-btn svg{position:absolute;width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;transition:opacity .3s ease,transform .3s ease}
+:root[data-theme="dark"] .ico-moon{opacity:0;transform:rotate(-90deg) scale(.6)}
+:root[data-theme="light"] .ico-sun{opacity:0;transform:rotate(90deg) scale(.6)}
 
-.title{position:absolute;left:0;right:0;top:11vh;text-align:center;font-weight:900;font-size:clamp(64px,14vw,232px);line-height:1;letter-spacing:-.05em;transition:opacity .6s var(--ease),transform .9s var(--ease)}
-.meta{position:absolute;left:32px;bottom:32px;font-size:13px;line-height:1.55;transition:opacity .5s,transform .8s var(--ease)}
-.meta .mono{font-size:12px}
-.l-black .meta .accent{color:var(--green)}
-.meta-r{position:absolute;right:32px;bottom:32px;text-align:right;font-size:11px;line-height:1.6;transition:opacity .5s}
-.mark{display:inline-grid;place-items:center;width:38px;height:38px;border:2px solid currentColor;font-weight:900;font-size:11px;margin-bottom:10px}
-.l-black .mark{color:var(--green)}
+/* ---------- hero: a two-face cube; the bust sits above it ---------- */
+#home{position:relative;overflow:hidden}
+.scene{perspective:2000px;overflow:hidden}
+.cube{position:relative;transform-style:preserve-3d;transform:translateZ(-50vw) rotateY(0deg);transition:transform .8s ease-in-out}
+#home.is-open .cube{transform:translateZ(-50vw) rotateY(90deg)}
+.face{background:var(--bg);-webkit-backface-visibility:hidden;backface-visibility:hidden;transition:background .4s}
+.face-front{position:relative;min-height:100vh;min-height:100svh;transform:translateZ(50vw);display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:24px;align-items:center;padding:calc(var(--nav-h) + 24px) var(--pad) var(--pad)}
+.face-menu{position:absolute;inset:0;transform:rotateY(-90deg) translateZ(50vw);display:flex;align-items:center;padding:var(--nav-h) var(--pad) var(--pad) 40%}
 
-/* bust */
-.stage{position:absolute;inset:0;pointer-events:none}
-.bust{position:absolute;left:50%;bottom:-2vh;height:min(80vh,920px);aspect-ratio:719/987;pointer-events:auto;
-  transform:translateX(-50%) translateY(calc(var(--p,0) * -3vh)) scale(calc(1 + var(--p,0) * .1));
-  transition:opacity .7s var(--ease),filter .7s var(--ease);perspective:1200px}
-.bust-inner{position:relative;display:block;width:100%;height:100%;transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .5s cubic-bezier(.2,.7,.2,1);transform-style:preserve-3d}
-.bust img{width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 30px 60px rgba(0,0,0,.55))}
-/* moving specular light + green reflection, clipped to the bust silhouette */
-.shine{position:absolute;inset:0;pointer-events:none;mix-blend-mode:overlay;
-  background:
-    radial-gradient(circle at var(--mx,40%) var(--my,30%),rgba(255,255,255,.85),transparent 28%),
-    radial-gradient(circle at calc(100% - var(--mx,40%)) calc(100% - var(--my,30%)),rgba(0,230,92,.55),transparent 45%);
-  -webkit-mask:url(assets/bust.png) center/contain no-repeat;mask:url(assets/bust.png) center/contain no-repeat}
-.bust-cap{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%) scale(.8);opacity:0;padding:10px 16px;border-radius:999px;background:var(--green);color:var(--black);font-size:12px;white-space:nowrap;transition:opacity .3s,transform .4s var(--ease)}
-.bust:hover .bust-cap,.bust:focus-visible .bust-cap{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.text-block{grid-column:1/6;min-width:0;width:100%;display:grid;justify-items:start}
+.ko-title{font-weight:900;font-size:var(--t,96px);line-height:1.05;letter-spacing:-.03em}
+.en-title{font-family:"Inter Tight",system-ui,sans-serif;font-weight:900;font-size:var(--t,96px);line-height:.95;letter-spacing:-.04em;white-space:nowrap}
+.since{font-family:var(--mono);font-size:15px;line-height:1.5;margin-top:36px}
+.symp{font-family:var(--mono);font-size:16px;line-height:1.6;margin-top:28px}
 
-/* arch */
-#arch{position:absolute;left:50%;bottom:4vh;width:min(88vw,940px);aspect-ratio:1366/829;opacity:0;transform:translateX(-50%) translateY(60px) scale(.6);transition:opacity .6s var(--ease),transform 1.1s var(--ease);pointer-events:none}
-#arch svg{width:100%;height:100%;overflow:visible}
-.seg{cursor:pointer;transition:transform .7s var(--ease),opacity .5s;transform-box:view-box;opacity:0;transform:translateY(40px) rotate(-6deg)}
-.seg image{transition:filter .5s}
-.seg .hit{fill:transparent;stroke:var(--black);stroke-width:8;pointer-events:none}
-#home.is-arch .seg .hit{pointer-events:all}
-.arch-label{position:absolute;transform:translate(-50%,-50%);text-align:center;cursor:pointer;white-space:nowrap;opacity:0;transition:opacity .5s,color .3s,transform .5s var(--ease)}
-.arch-label b{display:block;font-size:clamp(14px,1.5vw,20px);font-weight:900}
-.arch-label span{display:block;margin-top:2px;font-size:11px;letter-spacing:.14em;opacity:.6}
+#bustWrap{position:absolute;z-index:5;top:var(--nav-h);right:0;bottom:0;width:50%;overflow:hidden;cursor:grab;touch-action:pan-y;transition:transform .8s ease-in-out;outline-offset:-6px}
+#bustWrap.dragging{cursor:grabbing}
+#bustWrap img,#bustWrap canvas{position:absolute;pointer-events:none;transition:opacity .6s}
+#bustWrap img{left:50%;top:104px;width:min(86%,640px);transform:translateX(-50%)}
+#bustWrap canvas{inset:0;width:100%;height:100%;opacity:0}
+#bustWrap.loaded canvas{opacity:1}
+#bustWrap.loaded img{opacity:0}
+#home.is-open #bustWrap{transform:translateX(-56vw)}
 
-#home.is-arch .title,#home.is-arch .meta,#home.is-arch .meta-r{opacity:0;transform:translateY(-36px)}
-#home.is-arch .bust{opacity:0;filter:blur(12px);pointer-events:none}
-#home.is-arch .bust{transform:translateX(-50%) scale(1.25)}
-#home.is-arch #arch{opacity:1;transform:translateX(-50%);pointer-events:auto}
-#home.is-arch .seg{opacity:1;transform:none;transition-delay:calc(.25s + var(--i) * 90ms)}
-#home.is-arch .arch-label{opacity:1;transition-delay:calc(.6s + var(--i) * 90ms)}
-#home.is-arch #arch.is-hover .seg:not(.on){transition-delay:0ms}
-#arch.is-hover .seg:not(.on) image{filter:brightness(.4) contrast(1.1)}
-.pin.on-green .arch-label{color:var(--black)}
-#home.is-arch .seg.on{transform:scale(1.07) rotate(var(--rot));transition-delay:0ms}
-.seg.on image{filter:brightness(1.25) contrast(1.05)}
-.arch-label.on{color:var(--green);transform:translate(-50%,-50%) scale(1.1)}
-.pin.on-green .arch-label.on{color:var(--ink)}
-.pin.on-green .seg .hit{stroke:var(--green)}
+.menu{display:flex;flex-direction:column;gap:6px}
+.menu a{display:flex;align-items:flex-start;gap:20px;font-family:"Inter Tight",system-ui,sans-serif;font-weight:900;font-size:clamp(56px,8vw,132px);line-height:.95;letter-spacing:-.04em;text-transform:uppercase;opacity:0;transform:translateX(48px);transition:opacity .35s ease,transform .5s var(--ease),padding .4s var(--ease)}
+.menu a .n{font-family:var(--mono);font-size:14px;font-weight:700;letter-spacing:0;margin-top:.6em}
+.menu a:hover{padding-left:20px}
+#home.is-open .menu a{opacity:1;transform:none;transition-delay:calc(.45s + var(--i) * .08s),calc(.45s + var(--i) * .08s),0s}
+.menu-close{position:absolute;top:calc(var(--nav-h) + 16px);right:var(--pad);min-height:44px;font-family:var(--mono);font-size:13px;font-weight:700;text-transform:uppercase}
+.menu-close span{border-bottom:2px solid var(--fg);padding-bottom:4px}
 
-.hint{position:absolute;right:32px;top:50%;transform:translateY(-50%);writing-mode:vertical-rl;font-size:11px;letter-spacing:.24em;text-transform:uppercase;transition:opacity .4s}
-.back{position:absolute;right:32px;top:72px;opacity:0;pointer-events:none;transition:opacity .4s}
-.back button{font-size:13px;font-weight:700;border-bottom:2px solid currentColor;padding-bottom:4px}
-#home.is-arch .hint{opacity:0}
-#home.is-arch .back{opacity:1;pointer-events:auto}
-.pin.on-green .hint,.pin.on-green .back{color:var(--black)}
+/* ---------- lower sections: 12-column grid, asymmetric ---------- */
+.section{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:24px;padding:120px var(--pad) 96px;border-top:2px solid var(--fg)}
+.section h2{grid-column:1/5;font-family:"Inter Tight",sans-serif;font-weight:900;font-size:clamp(56px,9vw,144px);letter-spacing:-.05em;line-height:.85;text-transform:uppercase}
+.rows{grid-column:5/-1}
+.row{display:grid;grid-template-columns:150px minmax(0,1fr) 200px;gap:24px;align-items:baseline;padding:22px 0;border-bottom:1px solid var(--rule)}
+.row:first-child{border-top:1px solid var(--rule)}
+.row .title-ko{font-size:clamp(20px,2.4vw,32px);font-weight:700;letter-spacing:-.02em}
+.row:hover .title-ko{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:6px}
+.row .meta{text-align:right}
 
-/* home strips */
-.strip{position:relative;z-index:1;border-top:1px solid var(--line);padding:28px 32px;display:grid;grid-template-columns:1fr 2fr;gap:24px}
-.strip h2{font-size:clamp(28px,4vw,48px);font-weight:900;letter-spacing:-.03em;line-height:1}
-.strip p{color:var(--mute);line-height:1.7}
-.poster-row{display:flex;gap:16px;overflow-x:auto;padding:0 32px 40px;scrollbar-width:none}
-.poster{flex:0 0 200px;aspect-ratio:2/3;border:1px solid var(--line);display:flex;flex-direction:column;justify-content:space-between;padding:14px;filter:grayscale(1);transition:filter .5s,transform .6s var(--ease)}
-.poster:hover{filter:none;transform:translateY(-8px) rotate(-1deg);border-color:var(--green)}
-.poster .label{color:var(--mute)}
-.poster strong{font-weight:900;font-size:22px;line-height:1.1;letter-spacing:-.02em}
-footer{border-top:1px solid var(--line);padding:24px 32px;display:flex;justify-content:space-between;font-size:13px;color:var(--mute)}
+.poster-grid{grid-column:1/-1;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:16px}
+.poster{aspect-ratio:2/3;border:1px solid var(--fg);padding:14px;display:flex;flex-direction:column;justify-content:space-between;transition:background .3s,color .3s}
+.poster:hover{background:var(--fg);color:var(--bg)}
+.poster strong{font-family:"Inter Tight",sans-serif;font-size:clamp(16px,1.8vw,24px);font-weight:900;line-height:1;letter-spacing:-.03em;text-transform:uppercase}
 
-/* sub views */
-.view{position:relative;min-height:100vh;padding:140px 32px 80px}
-.view-head{display:grid;grid-template-columns:1fr 2fr;gap:24px;border-top:2px solid var(--green);padding-top:20px}
-.view-head .idx{font-family:"Inter Tight",sans-serif;font-weight:800;color:var(--green)}
-.view-head h1{font-size:clamp(56px,11vw,168px);font-weight:900;letter-spacing:-.05em;line-height:.88}
-.view-head p{margin-top:18px;max-width:560px;color:var(--mute);line-height:1.7}
-.view-body{margin-top:56px;border-top:1px solid var(--line)}
-.row{display:grid;grid-template-columns:120px 1fr 160px 120px;gap:24px;padding:22px 0;border-bottom:1px solid var(--line);align-items:center;transition:color .3s,padding .4s var(--ease)}
-.row:hover{color:var(--green);padding-left:12px}
-.row .label{color:var(--mute)}
-.row strong{font-size:22px;font-weight:700}
-.grid-posters{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:20px;margin-top:40px}
-.tier{border:1px solid var(--line);padding:24px;display:flex;flex-direction:column;gap:12px;text-align:left;transition:border-color .3s,background .3s,color .3s}
-.tier:hover{border-color:var(--green);background:var(--green);color:var(--black)}
-.tier strong{font-size:24px;font-weight:900}
+footer{display:flex;justify-content:space-between;gap:16px;padding:24px var(--pad);border-top:1px solid var(--rule)}
 
-/* curtain transition */
-.curtain{position:fixed;inset:0;z-index:20;background:var(--green);transform:translateX(-101%);pointer-events:none}
+/* ---------- sub pages ---------- */
+.view{min-height:100vh;padding:140px var(--pad) 96px;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:24px;align-content:start}
+.view-head{grid-column:1/-1;border-top:2px solid var(--fg);padding-top:24px}
+.view-head h1{font-size:clamp(72px,14vw,240px)}
+.view-body{grid-column:5/-1;margin-top:56px}
+.view-body .poster-grid{grid-column:auto;grid-template-columns:repeat(4,minmax(0,1fr))}
+.tier{display:flex;justify-content:space-between;align-items:baseline;gap:24px;width:100%;padding:28px 0;border-bottom:1px solid var(--rule);text-align:left;transition:padding .4s var(--ease)}
+.tier:hover{padding-left:16px}
+.tier strong{font-size:clamp(22px,2.6vw,36px);font-weight:900;letter-spacing:-.03em}
+.tier:first-child{border-top:1px solid var(--rule)}
+
+/* ---------- curtain transition between pages ---------- */
+.curtain{position:fixed;inset:0;z-index:40;background:var(--fg);transform:translateX(-101%);pointer-events:none}
 .curtain.run{animation:wipe 1.2s var(--ease) forwards}
 @keyframes wipe{0%{transform:translateX(-101%)}50%{transform:translateX(0)}100%{transform:translateX(101%)}}
 
-@media (max-width:820px){
-  .top{grid-template-columns:1fr;justify-items:center;padding:14px 16px}
-  .logo{display:none}
-  .nav{font-size:12px}
-  .nav button+button::before{margin:0 7px}
-  .layer,.grid-lines{padding:0 16px}
-  .title{top:12vh}
-  .bust{height:52vh;bottom:12vh}
-  .meta{left:16px;bottom:20px}
-  .meta-r{display:none}
-  .hint{right:10px}
-  .back{right:16px;top:56px}
-  #arch{width:76vw;bottom:26vh}
-  .arch-label b{font-size:12px}
-  .arch-label span{display:none}
-  .strip,.view-head{grid-template-columns:1fr}
-  .strip,.view{padding-left:16px;padding-right:16px}
+/* ---------- 768px and below: text on top, bust below ---------- */
+@media (max-width:768px){
+  :root{--pad:16px;--nav-h:64px}
+  .top{gap:10px}
+  .logo{width:42px;height:25px}
+  .nav{gap:10px}
+  .nav a{font-size:10px}
+  .face-front{grid-template-columns:minmax(0,1fr);align-items:start;padding-top:calc(var(--nav-h) + 32px);padding-bottom:calc(118vw + 16px)}
+  .text-block{grid-column:1/-1}
+  .since{font-size:14px;margin-top:24px}
+  .symp{font-size:14px;margin-top:20px}
+  #bustWrap{top:auto;left:0;width:100%;height:118vw;transform-origin:50% 100%}
+  #bustWrap img{top:88px;width:82%}
+  #home.is-open #bustWrap{transform:translateX(-30%) scale(.6)}
+  .face-menu{align-items:flex-start;padding:calc(var(--nav-h) + 72px) var(--pad) var(--pad)}
+  .menu a{font-size:15vw}
+  .section,.view{grid-template-columns:1fr}
+  .section h2,.rows,.view-body{grid-column:1/-1}
   .row{grid-template-columns:1fr;gap:6px}
-  .poster-row{padding:0 16px 40px}
+  .row .meta{text-align:left}
+  .poster-grid,.view-body .poster-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  footer{flex-direction:column}
 }
 @media (prefers-reduced-motion:reduce){
   *{transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}
@@ -161,280 +153,274 @@ footer{border-top:1px solid var(--line);padding:24px 32px;display:flex;justify-c
 </head>
 <body>
 
-<header class="top" id="top">
-  <button class="logo" data-home>향록연극회</button>
+<header class="top">
+  <a class="logo" href="#" aria-label="EVERGREEN · 향록연극회 홈"></a>
   <nav class="nav">
-    <button data-go="archive">아카이브</button>
-    <button data-go="show">공연 정보</button>
-    <button data-go="notice">공지사항</button>
-    <button data-go="support">후원링크</button>
+    <a href="#archive" data-view="archive">Archive</a>
+    <a href="#performances" data-view="performances">Performances</a>
+    <a href="#notice" data-view="notice">Notice</a>
+    <a href="#support" data-view="support">Support</a>
+    <button class="theme-btn" id="themeBtn" aria-label="라이트 모드로 전환">
+      <svg class="ico-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      <svg class="ico-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
   </nav>
-  <span></span>
 </header>
 
 <main>
   <!-- HOME -->
-  <section id="home">
-    <div class="pin" id="pin">
-      <div class="layer l-black">
-        <div class="grid-lines" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
-        <h1 class="title">향록연극회</h1>
-        <div class="meta">
-          <p class="mono accent">SYMPOSIUM:</p>
-          <p class="accent">향연의 연극, 연극의 향연</p>
-          <p class="mono" style="opacity:.6;margin-top:6px">SINCE 1965</p>
+  <section id="home" class="home-part">
+    <div class="scene">
+      <div class="cube">
+        <div class="face face-front" id="frontFace">
+          <div class="text-block" id="textBlock">
+            <p class="ko-title">향록연극회</p>
+            <h1 class="en-title"><span>EVERGREEN</span></h1>
+            <p class="since">SINCE 1965 · 서울대학교 농업생명과학대학 연극 동아리</p>
+            <p class="symp">SYMPOSIUM;<br>향연의 연극 연극의 향연</p>
+          </div>
         </div>
-        <div class="meta-r mono"><span class="mark">EG</span><br>[학교명] 연극 동아리<br>[동아리방 위치]</div>
-      </div>
 
-      <div class="layer l-green" aria-hidden="true">
-        <div class="grid-lines"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
-        <p class="title">향록연극회</p>
-        <div class="meta">
-          <p class="mono">SYMPOSIUM:</p>
-          <p>향연의 연극, 연극의 향연</p>
-          <p class="mono" style="opacity:.6;margin-top:6px">SINCE 1965</p>
-        </div>
-        <div class="meta-r mono"><span class="mark">EG</span><br>[학교명] 연극 동아리<br>[동아리방 위치]</div>
-      </div>
-
-      <div class="stage">
-        <button class="bust" id="bust" aria-label="플라톤 흉상, 눌러서 메뉴 열기">
-          <span class="bust-inner" id="bustInner">
-            <img src="assets/bust.png" alt="">
-            <span class="shine"></span>
-          </span>
-          <span class="bust-cap label">Click to enter</span>
-        </button>
-
-        <div id="arch" aria-label="메뉴">
-          <svg id="arcSvg" viewBox="0 0 1366 829"><defs></defs></svg>
-          <div id="arcLabels"></div>
+        <div class="face face-menu" id="menuFace" inert>
+          <nav class="menu" aria-label="메인 메뉴">
+            <a href="#about" style="--i:0"><span class="n">01</span>About</a>
+            <a href="#works" style="--i:1"><span class="n">02</span>Works</a>
+            <a href="#members" style="--i:2"><span class="n">03</span>Members</a>
+            <a href="#join" style="--i:3"><span class="n">04</span>Join</a>
+          </nav>
+          <button class="menu-close" id="menuClose" aria-label="메뉴 닫기"><span>Close</span></button>
         </div>
       </div>
+    </div>
 
-      <p class="hint mono">Scroll ↓ &nbsp;·&nbsp; Click Plato</p>
-      <div class="back"><button id="backArch">← 다시 닫기</button></div>
+    <div id="bustWrap" role="button" tabindex="0" aria-expanded="false" aria-label="플라톤 흉상, 눌러서 메뉴 열기">
+      <img src="assets/plato_bust_transparent.png" alt="">
+      <canvas></canvas>
     </div>
   </section>
 
-  <section class="strip" id="strip">
-    <h2 class="en">NOW ON STAGE</h2>
-    <p>다음 공연 정보가 여기에 들어가요. 공연 시즌에는 포스터와 예매 버튼이, 비시즌에는 지난 공연 링크가 보입니다.</p>
+  <section class="section home-part" id="now">
+    <h2>Now on<br>stage</h2>
+    <div class="rows">
+      <div class="row"><span class="mono">2026.11.20–23</span><span class="title-ko">[공연명]</span><span class="mono meta">○○홀 · 19:00</span></div>
+      <div class="row"><span class="mono">2026.06.12–14</span><span class="title-ko">[지난 공연명]</span><span class="mono meta">○○홀 · 19:00</span></div>
+      <div class="row"><span class="mono">2025.11.21–23</span><span class="title-ko">[지난 공연명]</span><span class="mono meta">○○홀 · 19:00</span></div>
+    </div>
   </section>
 
-  <section class="poster-row" id="posters" aria-label="최근 포스터"></section>
-
-  <!-- SUB VIEWS -->
-  <section class="view" data-view="archive" hidden>
-    <div class="view-head">
-      <span class="idx label">01 / 04</span>
-      <div><h1>아카이브</h1><p>역대 공연 포스터를 기수와 연도별로 살펴볼 수 있습니다. 포스터에 마우스를 올리면 원래 색이 나타납니다.</p></div>
+  <section class="section home-part" id="archivePreview">
+    <h2>Archive</h2>
+    <div class="poster-grid">
+      <div class="poster"><span class="mono">2026</span><strong>[공연명]</strong></div>
+      <div class="poster"><span class="mono">2025</span><strong>[공연명]</strong></div>
+      <div class="poster"><span class="mono">2024</span><strong>[공연명]</strong></div>
+      <div class="poster"><span class="mono">2023</span><strong>[공연명]</strong></div>
+      <div class="poster"><span class="mono">2022</span><strong>[공연명]</strong></div>
+      <div class="poster"><span class="mono">2021</span><strong>[공연명]</strong></div>
     </div>
-    <div class="grid-posters" id="archiveGrid"></div>
   </section>
 
-  <section class="view" data-view="show" hidden>
-    <div class="view-head">
-      <span class="idx label">02 / 04</span>
-      <div><h1>공연 정보</h1><p>지금 올라가는 공연과 예정된 공연의 일시, 장소, 예매 정보입니다.</p></div>
-    </div>
+  <!-- SUB PAGES -->
+  <section class="view" data-view="about" hidden>
+    <div class="view-head"><h1 class="display">About</h1></div>
     <div class="view-body">
-      <div class="row"><span class="label">2026.11</span><strong>[공연명]</strong><span class="label">○○홀 · 19:00</span><span class="label">예매 →</span></div>
-      <div class="row"><span class="label">2026.06</span><strong>[지난 공연명]</strong><span class="label">○○홀 · 19:00</span><span class="label">기록 →</span></div>
-      <div class="row"><span class="label">2025.11</span><strong>[지난 공연명]</strong><span class="label">○○홀 · 19:00</span><span class="label">기록 →</span></div>
+      <div class="row"><span class="mono">Since</span><span class="title-ko">1965</span><span class="mono meta"></span></div>
+      <div class="row"><span class="mono">소속</span><span class="title-ko">서울대학교 농업생명과학대학</span><span class="mono meta"></span></div>
+      <div class="row"><span class="mono">소개</span><span class="title-ko">[동아리 소개 한 문장]</span><span class="mono meta"></span></div>
+    </div>
+  </section>
+
+  <section class="view" data-view="works" hidden>
+    <div class="view-head"><h1 class="display">Works</h1></div>
+    <div class="view-body">
+      <div class="row"><span class="mono">2026.11</span><span class="title-ko">[공연명]</span><span class="mono meta">○○홀</span></div>
+      <div class="row"><span class="mono">2026.06</span><span class="title-ko">[공연명]</span><span class="mono meta">○○홀</span></div>
+      <div class="row"><span class="mono">2025.11</span><span class="title-ko">[공연명]</span><span class="mono meta">○○홀</span></div>
+    </div>
+  </section>
+
+  <section class="view" data-view="members" hidden>
+    <div class="view-head"><h1 class="display">Members</h1></div>
+    <div class="view-body">
+      <div class="row"><span class="mono">[N]기</span><span class="title-ko">회장 [이름] · 부회장 [이름]</span><span class="mono meta">2026</span></div>
+      <div class="row"><span class="mono">[N-1]기</span><span class="title-ko">회장 [이름] · 부회장 [이름]</span><span class="mono meta">2025</span></div>
+    </div>
+  </section>
+
+  <section class="view" data-view="join" hidden>
+    <div class="view-head"><h1 class="display">Join</h1></div>
+    <div class="view-body">
+      <div class="row"><span class="mono">모집</span><span class="title-ko">[모집 시기]</span><span class="mono meta"></span></div>
+      <div class="row"><span class="mono">지원</span><span class="title-ko">[지원 링크]</span><span class="mono meta">→</span></div>
+    </div>
+  </section>
+
+  <section class="view" data-view="archive" hidden>
+    <div class="view-head"><h1 class="display">Archive</h1></div>
+    <div class="view-body poster-grid">
+      <div class="poster"><span class="mono">2026</span><strong>[공연명]</strong></div>
+      <div class="poster"><span class="mono">2025</span><strong>[공연명]</strong></div>
+      <div class="poster"><span class="mono">2024</span><strong>[공연명]</strong></div>
+      <div class="poster"><span class="mono">2023</span><strong>[공연명]</strong></div>
+      <div class="poster"><span class="mono">2022</span><strong>[공연명]</strong></div>
+      <div class="poster"><span class="mono">2021</span><strong>[공연명]</strong></div>
+      <div class="poster"><span class="mono">2020</span><strong>[공연명]</strong></div>
+      <div class="poster"><span class="mono">2019</span><strong>[공연명]</strong></div>
+    </div>
+  </section>
+
+  <section class="view" data-view="performances" hidden>
+    <div class="view-head"><h1 class="display">Performances</h1></div>
+    <div class="view-body">
+      <div class="row"><span class="mono">2026.11.20–23</span><span class="title-ko">[공연명]</span><span class="mono meta">예매 →</span></div>
+      <div class="row"><span class="mono">2026.06.12–14</span><span class="title-ko">[지난 공연명]</span><span class="mono meta">기록 →</span></div>
+      <div class="row"><span class="mono">2025.11.21–23</span><span class="title-ko">[지난 공연명]</span><span class="mono meta">기록 →</span></div>
     </div>
   </section>
 
   <section class="view" data-view="notice" hidden>
-    <div class="view-head">
-      <span class="idx label">03 / 04</span>
-      <div><h1>공지사항</h1><p>오디션, 모집, 행사 소식을 여기서 확인하세요.</p></div>
-    </div>
+    <div class="view-head"><h1 class="display">Notice</h1></div>
     <div class="view-body">
-      <div class="row"><span class="label">2026.10.20</span><strong>[공지 제목]</strong><span class="label">모집</span><span class="label">자세히 →</span></div>
-      <div class="row"><span class="label">2026.10.02</span><strong>[공지 제목]</strong><span class="label">안내</span><span class="label">자세히 →</span></div>
+      <div class="row"><span class="mono">2026.10.20</span><span class="title-ko">[공지 제목]</span><span class="mono meta">모집</span></div>
+      <div class="row"><span class="mono">2026.10.02</span><span class="title-ko">[공지 제목]</span><span class="mono meta">안내</span></div>
     </div>
   </section>
 
   <section class="view" data-view="support" hidden>
-    <div class="view-head">
-      <span class="idx label">04 / 04</span>
-      <div><h1>후원링크</h1><p>동아리의 무대는 여러분의 후원으로 만들어집니다. 후원 방법을 선택해 주세요.</p></div>
-    </div>
-    <div class="grid-posters" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))">
-      <button class="tier"><span class="label">계좌 이체</span><strong>[계좌 안내]</strong><span class="label">→</span></button>
-      <button class="tier"><span class="label">후원 페이지</span><strong>[외부 링크]</strong><span class="label">→</span></button>
-      <button class="tier"><span class="label">현장 후원</span><strong>[공연 현장]</strong><span class="label">→</span></button>
+    <div class="view-head"><h1 class="display">Support</h1></div>
+    <div class="view-body">
+      <button class="tier"><span class="mono">Bank transfer</span><strong>[계좌 안내]</strong></button>
+      <button class="tier"><span class="mono">Online</span><strong>[외부 링크]</strong></button>
+      <button class="tier"><span class="mono">In person</span><strong>[공연 현장]</strong></button>
     </div>
   </section>
 </main>
 
 <footer>
-  <span class="en">EVERGREEN® · 향록연극회</span>
-  <span>[학교명] · [이메일] · [인스타그램]</span>
+  <span class="mono">EVERGREEN® · 향록연극회</span>
+  <span class="mono">서울대학교 농업생명과학대학 · [이메일] · [인스타그램]</span>
 </footer>
 
 <div class="curtain" id="curtain" aria-hidden="true"></div>
 
 <script>
+const root = document.documentElement;
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* shared with bust.js (the three.js renderer) */
+window.EG = { isOpen: false, dragging: false, dragYaw: 0 };
+
+/* ---------- fit EVERGREEN to the text column; 향록연극회 takes the same size ---------- */
+const textBlock = document.getElementById('textBlock');
+const enTitle = textBlock.querySelector('.en-title');
+function fitTitle() {
+  textBlock.style.setProperty('--t', '100px');
+  const w = enTitle.firstElementChild.getBoundingClientRect().width;
+  const size = Math.min(160, 100 * textBlock.clientWidth / w * 0.98);
+  textBlock.style.setProperty('--t', size + 'px');
+}
+fitTitle();
+document.fonts && document.fonts.ready.then(fitTitle);
+addEventListener('resize', fitTitle);
+
+/* ---------- colour mode ---------- */
+const themeBtn = document.getElementById('themeBtn');
+function applyTheme(t) {
+  root.dataset.theme = t;
+  themeBtn.setAttribute('aria-label', t === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환');
+  try { localStorage.setItem('ev-theme', t); } catch (e) {}
+}
+applyTheme(root.dataset.theme === 'light' ? 'light' : 'dark');
+themeBtn.addEventListener('click', () => applyTheme(root.dataset.theme === 'light' ? 'dark' : 'light'));
+
+/* ---------- bust click / drag / keyboard → menu ---------- */
 const home = document.getElementById('home');
-const pin = document.getElementById('pin');
-const top_ = document.getElementById('top');
+const wrap = document.getElementById('bustWrap');
+const frontFace = document.getElementById('frontFace');
+const menuFace = document.getElementById('menuFace');
+const menuClose = document.getElementById('menuClose');
 
-/* ---------- arch segments ---------- */
-const segs = [
-  { key: 'archive', ko: '아카이브', en: 'ARCHIVE' },
-  { key: 'show',    ko: '공연 정보', en: 'PERFORMANCE' },
-  { key: 'notice',  ko: '공지사항', en: 'NOTICE' },
-  { key: 'support', ko: '후원링크', en: 'SUPPORT' },
-];
-// geometry tuned to assets/arch.webp (1366 x 829)
-const CX = 683, CY = 806, R = 690, r = 276, N = segs.length;
-const NS = 'http://www.w3.org/2000/svg';
-const svg = document.getElementById('arcSvg');
-const defs = svg.querySelector('defs');
-const labels = document.getElementById('arcLabels');
-const arch = document.getElementById('arch');
-const pt = (rad, deg) => [CX + rad * Math.cos(deg * Math.PI / 180), CY - rad * Math.sin(deg * Math.PI / 180)];
-
-function setHover(i, on) {
-  arch.classList.toggle('is-hover', on);
-  arch.querySelectorAll('.on').forEach(el => el.classList.remove('on'));
-  if (on) arch.querySelectorAll(`[data-i="${i}"]`).forEach(el => el.classList.add('on'));
+function setMenu(open, focus = true) {
+  if (EG.isOpen === open) return;
+  EG.isOpen = open;
+  home.classList.toggle('is-open', open);
+  menuFace.inert = !open;
+  frontFace.inert = open;
+  wrap.setAttribute('aria-expanded', String(open));
+  wrap.setAttribute('aria-label', open ? '플라톤 흉상, 눌러서 메뉴 닫기' : '플라톤 흉상, 눌러서 메뉴 열기');
+  if (focus && open) setTimeout(() => EG.isOpen && menuFace.querySelector('a').focus({ preventScroll: true }), 800);
+  if (focus && !open) wrap.focus({ preventScroll: true });
 }
 
-segs.forEach((s, i) => {
-  const a1 = 180 - i * (180 / N);
-  const a2 = a1 - 180 / N;
-  const [ox1, oy1] = pt(R, a1), [ox2, oy2] = pt(R, a2);
-  const [ix2, iy2] = pt(r, a2), [ix1, iy1] = pt(r, a1);
-  const d = `M${ox1} ${oy1} A${R} ${R} 0 0 1 ${ox2} ${oy2} L${ix2} ${iy2} A${r} ${r} 0 0 0 ${ix1} ${iy1} Z`;
-  const mid = (a1 + a2) / 2;
-  const [mx, my] = pt((R + r) / 2, mid);
-
-  const clip = document.createElementNS(NS, 'clipPath');
-  clip.id = 'clip' + i;
-  const cp = document.createElementNS(NS, 'path');
-  cp.setAttribute('d', d);
-  clip.appendChild(cp);
-  defs.appendChild(clip);
-
-  const g = document.createElementNS(NS, 'g');
-  g.setAttribute('class', 'seg');
-  g.setAttribute('role', 'button');
-  g.setAttribute('aria-label', s.ko);
-  g.dataset.i = i;
-  g.style.transformOrigin = `${mx}px ${my}px`;
-  g.style.setProperty('--i', i);
-  g.style.setProperty('--rot', `${(i - (N - 1) / 2) * 1.5}deg`);
-
-  const img = document.createElementNS(NS, 'image');
-  img.setAttribute('href', 'assets/arch.webp');
-  img.setAttribute('width', 1366);
-  img.setAttribute('height', 829);
-  img.setAttribute('clip-path', `url(#clip${i})`);
-
-  const hit = document.createElementNS(NS, 'path');
-  hit.setAttribute('d', d);
-  hit.setAttribute('class', 'hit');
-  g.append(img, hit);
-  svg.appendChild(g);
-
-  const [lx, ly] = pt(R + 52, mid);
-  const lab = document.createElement('button');
-  lab.className = 'arch-label';
-  lab.dataset.i = i;
-  lab.style.left = (lx / 1366 * 100) + '%';
-  lab.style.top = (ly / 829 * 100) + '%';
-  lab.style.setProperty('--i', i);
-  lab.innerHTML = `<b>${s.ko}</b><span class="mono">${s.en}</span>`;
-  labels.appendChild(lab);
-
-  [g, lab].forEach(el => {
-    el.addEventListener('mouseenter', () => setHover(i, true));
-    el.addEventListener('mouseleave', () => setHover(i, false));
-    el.addEventListener('focus', () => setHover(i, true));
-    el.addEventListener('blur', () => setHover(i, false));
-    el.addEventListener('click', () => go(s.key));
-  });
+let down = null;
+wrap.addEventListener('pointerdown', e => {
+  down = { x: e.clientX, start: EG.dragYaw, moved: false };
+  wrap.setPointerCapture(e.pointerId);
 });
-
-/* ---------- scroll: black → green duotone ---------- */
-function onScroll() {
-  const max = home.offsetHeight - innerHeight;
-  const p = Math.min(1, Math.max(0, scrollY / max));
-  pin.style.setProperty('--p', p.toFixed(3));
-  const green = p > .5 && !home.hidden;
-  pin.classList.toggle('on-green', green);
-  top_.classList.toggle('on-green', green && scrollY < max + 10);
-  top_.classList.toggle('show-logo', scrollY > max);
-  top_.classList.toggle('solid', scrollY > max + 40 || home.hidden);
+wrap.addEventListener('pointermove', e => {
+  if (!down) return;
+  const dx = e.clientX - down.x;
+  if (!down.moved && Math.abs(dx) > 6) {
+    down.moved = true;
+    EG.dragging = true;
+    wrap.classList.add('dragging');
+  }
+  if (down.moved) EG.dragYaw = down.start + dx * 0.008;
+});
+function endPointer(e) {
+  if (!down) return;
+  const wasDrag = down.moved;
+  down = null;
+  EG.dragging = false;
+  wrap.classList.remove('dragging');
+  if (!wasDrag && e.type === 'pointerup') setMenu(!EG.isOpen, false);
 }
-addEventListener('scroll', onScroll, { passive: true });
-addEventListener('resize', onScroll);
+wrap.addEventListener('pointerup', endPointer);
+wrap.addEventListener('pointercancel', endPointer);
+wrap.addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setMenu(!EG.isOpen); }
+});
+menuClose.addEventListener('click', () => setMenu(false));
+addEventListener('keydown', e => { if (e.key === 'Escape' && EG.isOpen) setMenu(false); });
 
-/* ---------- bust: cursor tilt + moving light ---------- */
-const bust = document.getElementById('bust');
-const bustInner = document.getElementById('bustInner');
-if (!reduce) {
-  addEventListener('pointermove', e => {
-    if (home.classList.contains('is-arch')) return;
-    const x = e.clientX / innerWidth, y = e.clientY / innerHeight;
-    bustInner.style.setProperty('--ry', `${(x - .5) * 18}deg`);
-    bustInner.style.setProperty('--rx', `${(.5 - y) * 10}deg`);
-    const b = bust.getBoundingClientRect();
-    bustInner.style.setProperty('--mx', `${((e.clientX - b.left) / b.width) * 100}%`);
-    bustInner.style.setProperty('--my', `${((e.clientY - b.top) / b.height) * 100}%`);
-  });
-}
-
-bust.addEventListener('click', () => home.classList.add('is-arch'));
-document.getElementById('backArch').addEventListener('click', () => { home.classList.remove('is-arch'); setHover(0, false); });
-document.querySelector('[data-home]').addEventListener('click', () => showHome());
-
-/* ---------- posters (placeholder content) ---------- */
-const posterHTML = (t, n) => `<div class="poster"><span class="label">${n}</span><strong>${t}</strong></div>`;
-document.getElementById('posters').innerHTML = Array.from({ length: 6 }, (_, i) =>
-  posterHTML(`[공연명 ${i + 1}]`, `${2026 - Math.floor(i / 2)}`)).join('');
-document.getElementById('archiveGrid').innerHTML = Array.from({ length: 12 }, (_, i) =>
-  posterHTML(`[포스터 ${String(i + 1).padStart(2, '0')}]`, `${2026 - Math.floor(i / 3)} · 기수`)).join('');
-
-/* ---------- navigation with curtain ---------- */
+/* ---------- hash routing with curtain ---------- */
 const curtain = document.getElementById('curtain');
+const homeParts = document.querySelectorAll('.home-part');
+const views = new Set([...document.querySelectorAll('.view')].map(v => v.dataset.view));
 let busy = false;
-const homeParts = ['home', 'strip', 'posters'].map(id => document.getElementById(id));
 
 function showView(key) {
+  setMenu(false, false);
   homeParts.forEach(el => el.hidden = true);
   document.querySelectorAll('.view').forEach(v => v.hidden = v.dataset.view !== key);
-  document.querySelectorAll('.nav button').forEach(b => b.setAttribute('aria-current', b.dataset.go === key ? 'page' : 'false'));
+  document.querySelectorAll('.nav a[data-view]').forEach(a => a.setAttribute('aria-current', a.dataset.view === key ? 'page' : 'false'));
   scrollTo(0, 0);
-  onScroll();
 }
 
 function showHome() {
+  setMenu(false, false);
   document.querySelectorAll('.view').forEach(v => v.hidden = true);
   homeParts.forEach(el => el.hidden = false);
-  document.querySelectorAll('.nav button').forEach(b => b.removeAttribute('aria-current'));
+  document.querySelectorAll('.nav a[data-view]').forEach(a => a.removeAttribute('aria-current'));
   scrollTo(0, 0);
-  onScroll();
+  fitTitle();
 }
 
-function go(key) {
-  if (busy) return;
+function route(animate) {
+  const key = location.hash.slice(1);
+  const show = () => views.has(key) ? showView(key) : showHome();
+  if (!animate || reduce || busy) { show(); return; }
   busy = true;
-  if (reduce) { showView(key); busy = false; return; }
   curtain.classList.remove('run');
   void curtain.offsetWidth;
   curtain.classList.add('run');
-  setTimeout(() => showView(key), 600);
+  setTimeout(show, 600);
   setTimeout(() => { curtain.classList.remove('run'); busy = false; }, 1200);
 }
-
-document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => go(b.dataset.go)));
-onScroll();
+addEventListener('hashchange', () => route(true));
+document.querySelector('.logo').addEventListener('click', () => { if (!location.hash || location.hash === '#') showHome(); });
+route(false);
 </script>
+<script type="module" src="bust.js"></script>
 </body>
 </html>
